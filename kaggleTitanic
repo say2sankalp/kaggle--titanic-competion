@@ -1,0 +1,66 @@
+rm(list= ls(all= TRUE))
+setwd("~/anedge/kaggle")
+train_2 <- read.csv("~/anedge/kaggle/train_2.csv", stringsAsFactors=TRUE)
+ View(train_2)
+ names(train_2)
+ test <- read.csv("~/anedge/kaggle/test.csv", stringsAsFactors=FALSE)
+ names(test)
+ View(test)
+str(train_2)
+   table(train_2$Survived)
+   prop.table(table(train_2$Survived))
+   test$survived<- rep(0,418)
+   submit<- data.frame(PassengerID = test$PassengerId,survived =test$survived)
+   write.csv(submit,file= "theyallperish.csv",row.names = FALSE)
+   View(theyallperish.csv)
+   table(train_2$Sex)
+   prop.table(table(train_2$Sex,train_2$Survived),1)
+   test$survived <-0
+   test$survived[test$Sex == 'female'] <- 1
+  summary(train_2$Age) 
+  train_2$child<- 0 
+  train_2$child[train_2$Age < 18] <-  1
+  aggregate(Survived ~ child+ Sex ,data = train_2,FUN = sum)
+  aggregate(Survived ~ child+ Sex,data = train_2,FUN = length)
+  aggregate(Survived ~ child + Sex ,data=train_2, FUN = function(x){sum(x)/length(x)})
+  train_2$Fare2<- '30+'
+  train_2$Fare2[train$Fare>= 20 & train_2$Fare< 30] <- '20-30'
+  train_2$Fare2[train_2$Fare >=10 & train_2$Fare< 20]<- '10-20'
+  train_2$fare[train_2$Fare < 10]<- '10'
+  aggregate(Survived ~ Fare2 + Pclass + Sex ,data = train_2,FUN = function(x){sum(x)/length(x)})
+  test$survived<- 0
+  test$survived[test$Sex == 'female']<- 1
+  #females who pay more for a third class fare also perish
+  test$survived[test$Sex== 'female' & test$Pclass== 3 & test$Fare >= 20]<- 0
+  #submission of files on kaggle 
+  submit<- data.frame(PassengerID= test$PassengerId,Survived=test$survived)
+  write.csv(submit,"genderclassmodel.csv",row.names = FALSE)
+  # startting new thing decision trees
+  #importing cart libraries decison trees
+  library(rpart)
+  fit<- rpart(Survived ~ Pclass+Sex+Age+SibSp+Parch+Fare+Embarked,data = train_2,method = "class")
+  plot(fit)
+  text(fit)
+  #install.packages("rattle")
+  #install.packages("RColorBrewer")
+  library(rattle)
+  library(RColorBrewer)
+  # data visualization in more legible way 
+  fancyRpartPlot(fit)
+  # MAKE SURE WE TYPE type not class= "method"
+  fpred<- predict(fit, test, type =  "class")
+  #syntac error submit<- data.frame(PassengerId= test$PassengerId,Survived= test$survived)
+  submit2<- data.frame(PassengerId= test$PassengerId,Survived=fpred )
+  write.csv(submit2,file= "myLASTimprovedtree.csv",row.names = FALSE)
+  #  learning how to over fit the model
+  fit2<- rpart(Survived ~ Pclass+Sex +Age+SibSp+Parch+Fare+Embarked,data = train_2,method = "class",control = rpart.control(minsplit = 2,cp=0))
+  fancyRpartPlot(fit2)
+  fpred2<- predict(fit,test,type = "class")
+  submit3<- data.frame(PassengerId=test$PassengerId,Survived = fpred2)
+  write.csv(submit3,file = "firstoverfit2.csv",row.names = FALSE)
+  fit4<- rpart(Survived ~ Pclass+Sex+Age+SibSp+Parch+Fare+Embarked,data = train_2,method = "class",control = rpart.control(minsplit = 2,cp=0.008))
+  new.fit4<- prp(fit4,snip = TRUE)$obj
+  fancyRpartPlot(new.fit4)
+  # featured engineering 
+  
+  
